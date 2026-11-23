@@ -10,7 +10,7 @@
       "name": "taskwarrior",
       "source": "./",
       "description": "Keep an agent's plan in Taskwarrior, so a later session resumes it after a long or dropped one, without Taskwarrior's silent traps.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "homepage": "https://github.com/Ferroman/taskwarrior-skill",
       "repository": "https://github.com/Ferroman/taskwarrior-skill",
       "license": "MIT",

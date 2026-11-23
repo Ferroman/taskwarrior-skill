@@ -1,6 +1,6 @@
 {
   "name": "taskwarrior",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Lets an agent keep the plan for its multi-step work in Taskwarrior: each step a task, its context in annotations, so a later session resumes the plan after a long or dropped one. Handles the Taskwarrior traps that give an agent wrong results without an error: context-scoped reports, prompts, renumbering ids and invalid JSON export.",
   "author": {
     "name": "Bohdan Frankovskyi"
