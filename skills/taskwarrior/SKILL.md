@@ -12,9 +12,10 @@ description: >-
   because Taskwarrior has sharp edges (active contexts silently filter results,
   interactive prompts block automation, short ids renumber, and export can emit
   invalid JSON) that this skill handles correctly. Also use this skill when the
-  agent itself should track its own multi-step session work in Taskwarrior
-  (creating tasks as it starts and completing them as it finishes) instead of an
-  ephemeral todo list — see the "Self-tracking" section.
+  agent keeps the plan for its own multi-step work in Taskwarrior instead of an
+  ephemeral todo list, a markdown checklist or an issue tracker: writing the
+  steps as tasks, recording context in annotations, and resuming a plan that a
+  long or dropped session left behind — see the "Self-tracking" section.
 ---
 
 # Taskwarrior
@@ -201,13 +202,19 @@ due.none:  due.any:     # "has no due date" / "has a due date"
 - **Avoid the `not` operator** (unreliable across builds); negate with `-tag`,
   `attr.not:value`, or `attr.none:` instead.
 
-## Self-tracking: Taskwarrior as the agent's session todo list
+## Self-tracking: Taskwarrior as the agent's plan
 
 When the user asks for it (for example in their `CLAUDE.md` or `AGENTS.md`),
-mirror your multi-step session work into Taskwarrior instead of an ephemeral
-todo list, so the user can watch progress in their normal `task` tooling and it
-persists across sessions. The conventions below keep your tasks cleanly
-separated from the user's real ones.
+keep the plan for your multi-step work in Taskwarrior, not in an ephemeral todo
+list, a markdown checklist or an issue tracker. Each step is a task, the order
+is task dependencies, and what you learn on the way is annotations on the task
+it belongs to. The plan then outlives the session: when a long session runs out
+of context or a session dies, the next one reads the plan back and carries on
+from the step that was in progress. The user follows the same plan with their
+normal `task` tooling.
+
+The conventions below keep your tasks cleanly separated from the user's real
+ones.
 
 **Namespacing (non-negotiable — this is what keeps your tasks out of their way):**
 
@@ -224,22 +231,54 @@ separated from the user's real ones.
 **Lifecycle:**
 
 ```bash
-# 1. When you start a multi-step task, create one Taskwarrior task per step.
-#    Capture the uuid so later steps are unambiguous (ids renumber).
-task rc.context=none rc.verbose=new-uuid \
-  add "Add retry to the sync client" project:agent.myapp +agent
+# 1. Before you start, write the plan: one task per step. Capture each uuid
+#    (ids renumber), and make a step depend on the step it needs first.
+s1=$(task rc.context=none rc.verbose=new-uuid \
+  add "Add retry to the sync client" project:agent.myapp +agent | grep -oE '[0-9a-f-]{36}')
+s2=$(task rc.context=none rc.verbose=new-uuid \
+  add "Test retry against a flaky server" project:agent.myapp +agent depends:${s1:0:8} \
+  | grep -oE '[0-9a-f-]{36}')
 
 # 2. Mark the step you're actively working on — this lets the user run
 #    `task +ACTIVE` to see exactly what you're doing right now.
 task rc.context=none rc.confirmation=off <uuid8> start
 
-# 3. Complete it when the step is genuinely done (tests pass / verified).
+# 3. Annotate as you go: decisions, files touched, commands that worked,
+#    blockers. The annotation is what the next session reads to continue.
+task rc.context=none rc.confirmation=off <uuid8> annotate "retry 3x with backoff; change is in src/sync.py"
+task rc.context=none rc.confirmation=off <uuid8> annotate "blocked on missing API token"
+
+# 4. Complete it when the step is genuinely done (tests pass / verified).
 task rc.context=none rc.confirmation=off <uuid8> stop
 task rc.context=none rc.confirmation=off <uuid8> done
-
-# Annotate when you learn something worth recording against the task:
-task rc.context=none rc.confirmation=off <uuid8> annotate "blocked on missing API token"
 ```
+
+If the user gives you a plan (a list, a spec, a ticket), turn it into tasks the
+same way and work from the tasks, not from the original text. Add a step you
+discover on the way as a new task, rather than holding it in your head.
+
+**Resuming (start of a session, or after context was compacted):**
+
+Before you write a new plan, check whether one is already there:
+
+```bash
+# The step that was in progress, with its notes
+scripts/tw-export.sh project:agent.myapp +ACTIVE \
+  | jq -r '.[] | "\(.uuid[0:8]) \(.description)", (.annotations[]?.description | "  - " + .)'
+
+# The whole open plan, in the order it was written
+scripts/tw-export.sh project:agent.myapp status:pending \
+  | jq -r 'sort_by(.entry)[] | "\(.uuid[0:8]) \(.description)\(if .depends then " (has dependencies)" else "" end)"'
+
+# Steps that can start now (pending, not blocked by an open dependency)
+scripts/tw-export.sh project:agent.myapp +READY | jq -r '.[] | "\(.uuid[0:8]) \(.description)"'
+```
+
+Read the annotations of the active step before you continue it, and check the
+work it describes (the files, the branch) instead of trusting the note alone: a
+session can die after the work and before the annotation. If the open plan
+belongs to a different piece of work from what the user now asks for, ask
+before you continue it or add to it.
 
 **Judgment, not bookkeeping for its own sake:**
 
