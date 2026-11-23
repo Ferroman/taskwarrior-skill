@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "taskwarrior-skill",
+  "description": "A Claude Code skill for working with Taskwarrior",
+  "owner": {
+    "name": "Bohdan Frankovskyi"
+  },
+  "plugins": [
+    {
+      "name": "taskwarrior",
+      "source": "./",
+      "description": "Drive Taskwarrior 3.x from an agent without its silent traps, and let the agent track its own session work as tasks.",
+      "version": "0.1.0",
+      "homepage": "https://github.com/Ferroman/taskwarrior-skill",
+      "repository": "https://github.com/Ferroman/taskwarrior-skill",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": ["taskwarrior", "taskchampion", "todo", "task-management"]
+    }
+  ]
+}

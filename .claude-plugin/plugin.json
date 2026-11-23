@@ -1,0 +1,12 @@
+{
+  "name": "taskwarrior",
+  "version": "0.1.0",
+  "description": "Drive Taskwarrior 3.x from an agent without its silent traps: context-scoped reports, interactive prompts, renumbering ids and invalid JSON export. Also lets the agent track its own session work as tasks.",
+  "author": {
+    "name": "Bohdan Frankovskyi"
+  },
+  "homepage": "https://github.com/Ferroman/taskwarrior-skill",
+  "repository": "https://github.com/Ferroman/taskwarrior-skill",
+  "license": "MIT",
+  "keywords": ["taskwarrior", "taskchampion", "todo", "task-management", "cli"]
+}
